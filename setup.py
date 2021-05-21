@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='AOTK',
+    name='AGOTK',
     version = '0.1',
-    description='AOTK tool',
+    description='AGOTK tool',
     author='Luc Geven, Benjamin van Seggelen, Roy van Schaijk',
     packages=find_packages()
 )
