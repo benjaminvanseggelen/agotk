@@ -57,7 +57,7 @@ def spoof_dns(pkt: Packet) -> None:
             recordType = pkt[DNS].qd[i].qtype
             print(f'Received DNS request from {pkt[IP].src} for {name} of type {recordTypeIdToName(recordType)}')
 
-            res_pkt = get_spoof_packet(pkt, name, recordType, new_dns)
+            res_pkt = get_spoof_packet(pkt, name, recordType)
             send(res_pkt, iface=INTERFACE)
 
 
