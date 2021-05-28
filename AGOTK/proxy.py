@@ -1,11 +1,11 @@
 import socketserver
 import http.server
 import urllib.request
-PORT = 80
+PORT: int = 80
 
 
 class MyProxy(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
+    def do_GET(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
         reqObj = urllib.request.Request(url, None, self.headers)
         request = urllib.request.urlopen(reqObj)
@@ -14,7 +14,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
             self.send_header(header, val)
         self.end_headers()
         self.copyfile(request, self.wfile)
-    def do_POST(self):
+    def do_POST(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
         reqObj = urllib.request.Request(url, None, self.headers)
         request = urllib.request.urlopen(reqObj)

@@ -6,14 +6,11 @@ import os
 
 @dataclass
 class SpoofingInformation:
+    """Class that holds the spoofing information"""
     ip_gateway: str = None
     ip_target: str = None
     mac_gateway: str = None
     mac_target: str = None
-
-def get_ip_addresses_on_network() -> List[str]:
-    """TODO"""
-    pass
 
 def set_packet_forwarding(value: bool) -> None:
     """TODO WINDOWS & Linux"""
@@ -82,13 +79,3 @@ def spoof(ip_target: str, ip_gateway: str, do_infitely: bool, interface: str,  s
             
             # turn off packet forwarding
             set_packet_forwarding(False)
-
-if __name__ == '__main__':
-    #get_mac_address('192.168.200.34')
-
-    #ip_target: str = '192.168.200.1'
-    ip_target: str = '192.168.200.1' # 19
-    #ip_target: str = '192.168.200.1'
-    ip_gateway: str = '192.168.200.254'
-    spoof(ip_target, ip_gateway, True, 10)
-    #reset(ip_target, gateway)
