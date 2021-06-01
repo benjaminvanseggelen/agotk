@@ -1,6 +1,17 @@
 from scapy.all import *
 
 class DNSSpoofer:
+    """
+    DNS Spoofer class
+    Creating:
+        Always provide an interface if possible, otherwise it will pick the scapy default.
+        new_dns_ip and new_dns_ip6 are the ip addresses that any spoofed DNS record will point towards.
+        These do not have to be given if the spoofed ip is the ip of the current machine.
+    Starting:
+        Just call the start() method
+    Stopping:
+        Just call the stop() method. Calling this before start() does nothing.
+    """
 
     def __init__(self, interface: str = conf.iface, new_dns_ip: str = '', new_dns_ip6: str = ''):
         self.interface = interface
@@ -86,8 +97,8 @@ class DNSSpoofer:
             print('DNS spoofing has to be started, before it can be stopped')
 
 if __name__ == '__main__':
-    interface = 'enp10s0u1u3u3'
-    interface = 'vboxnet0'
+    interface = 'enp10s0u1u3u3' # Testing
+    interface = 'vboxnet0'      # Testing
 
     spoofer = DNSSpoofer(interface)
     spoofer.start()
