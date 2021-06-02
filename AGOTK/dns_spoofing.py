@@ -13,7 +13,7 @@ class DNSSpoofer:
         Just call the stop() method. Calling this before start() does nothing.
     """
 
-    def __init__(self, interface: str = conf.iface, new_dns_ip: str = '', new_dns_ip6: str = ''):
+    def __init__(self, interface: str = conf.iface, new_dns_ip: str = '', new_dns_ip6: str = '') -> None:
         self.interface = interface
         self.new_dns_ip = new_dns_ip if new_dns_ip else get_if_addr(interface)
         self.new_dns_ip6 = new_dns_ip6 if new_dns_ip6 else get_if_addr6(interface)
@@ -82,30 +82,16 @@ class DNSSpoofer:
                 else:
                     print('Type not supported, ignoring...')
     
-    def start(self):
+    def start(self) -> None:
         """Start an asynchronous sniffer, use the stop() method to stop this"""
         self.sniffer = AsyncSniffer(iface=self.interface, prn=self.spoof_dns_request, lfilter=self.isIncoming, store=False)
         self.sniffer.start()
         print("DNS spoofing started")
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the async sniffer"""
         if self.sniffer:
             self.sniffer.stop()
             print("DNS spoofing stopped")
         else:
             print('DNS spoofing has to be started, before it can be stopped')
-
-if __name__ == '__main__':
-    interface = 'enp10s0u1u3u3' # Testing
-    interface = 'vboxnet0'      # Testing
-
-    spoofer = DNSSpoofer(interface)
-    spoofer.start()
-
-    try:
-        while True:
-            pass
-    except KeyboardInterrupt():
-        spoofer.stop()
-        print("\nExit...")
