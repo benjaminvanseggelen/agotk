@@ -1,16 +1,19 @@
-import socketserver
 import http.server
+import socketserver
 import requests
+
 PORT: int = 80
 
 
 class MyProxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
-        url = 'http://' + self.headers['Host'] + self.path
+        url = 'https://' + self.headers['Host'] + self.path
         req = requests.get(url, headers=self.headers)
         self.send_response_only(req.status_code)
         for header in req.headers:
-            if header != 'Content-Encoding' and header != 'Content-Length':
+            if header != 'Content-Encoding' and header != 'Content-Length' and header != 'Transfer-Encoding':
+                print(header)
+                print(req.headers[header])
                 self.send_header(header, req.headers[header])
         self.end_headers()
         newData = req.text
@@ -22,6 +25,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
         data = self.rfile.read(int(self.headers['Content-Length']))
+        print(data)
         req = requests.post(url, data=data, headers=self.headers)
         self.send_response_only(req.status_code)
         for header in req.headers:
