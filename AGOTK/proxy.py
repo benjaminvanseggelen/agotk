@@ -1,12 +1,11 @@
 import socketserver
 import http.server
-from urllib import request, parse
 import requests
-PORT = 80
+PORT: int = 80
 
 
 class MyProxy(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
+    def do_GET(self) -> None:
         url = 'http://' + self.headers['Host'] + self.path
         req = requests.get(url, headers=self.headers)
         self.send_response_only(req.status_code)
@@ -19,9 +18,8 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         newData = newData.replace('https://', 'http://')
         print(newData)
         self.wfile.write(bytes(newData, 'utf-8'))
-    # TODO
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
         data = self.rfile.read(int(self.headers['Content-Length']))
         req = requests.post(url, data=data, headers=self.headers)
