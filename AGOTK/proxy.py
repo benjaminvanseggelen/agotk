@@ -1,28 +1,42 @@
 import socketserver
 import http.server
-import urllib.request
+from urllib import request, parse
+import requests
 PORT = 80
 
 
 class MyProxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        url = 'https://' + self.headers['Host'] + self.path
-        reqObj = urllib.request.Request(url, None, self.headers)
-        request = urllib.request.urlopen(reqObj)
-        self.send_response(request.status)
-        for (header, val) in request.getheaders():
-            self.send_header(header, val)
+        url = 'http://' + self.headers['Host'] + self.path
+        req = requests.get(url, headers=self.headers)
+        self.send_response_only(req.status_code)
+        for header in req.headers:
+            if header != 'Content-Encoding' and header != 'Content-Length':
+                self.send_header(header, req.headers[header])
         self.end_headers()
-        self.copyfile(request, self.wfile)
+        newData = req.text
+        #remove https
+        newData = newData.replace('https://', 'http://')
+        print(newData)
+        self.wfile.write(bytes(newData, 'utf-8'))
+    # TODO
+
     def do_POST(self):
         url = 'https://' + self.headers['Host'] + self.path
-        reqObj = urllib.request.Request(url, None, self.headers)
-        request = urllib.request.urlopen(reqObj)
-        self.send_response(request.status)
-        for (header, val) in request.getheaders():
-            self.send_header(header, val)
+        data = self.rfile.read(int(self.headers['Content-Length']))
+        req = requests.post(url, data=data, headers=self.headers)
+        self.send_response_only(req.status_code)
+        for header in req.headers:
+            #skip a few headers as we remove the encoding used
+            if header != 'Content-Encoding' and header != 'Content-Length' and header != 'Transfer-Encoding':
+                self.send_header(header, req.headers[header])
         self.end_headers()
-        self.copyfile(request, self.wfile)
+        newData = req.text
+        #remove https
+        newData = newData.replace('https://', 'http://')
+        print(newData)
+        self.wfile.write(bytes(newData, 'utf-8'))
+
 
 httpd = socketserver.ForkingTCPServer(('', PORT), MyProxy)
 print("Now serving at " + str(PORT))
