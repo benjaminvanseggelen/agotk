@@ -1,7 +1,9 @@
+from AGOTK.proxy import MyProxy
 import sys
 import argparse
 from AGOTK import ARPPoisoner
 from AGOTK import DNSSpoofer
+from AGOTK import ProxyServer
 
 def main(argv) -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
@@ -21,6 +23,9 @@ def main(argv) -> None:
     dns_spoofer: DNSSpoofer = DNSSpoofer(interface)
     dns_spoofer.start()
 
+    proxy_server: ProxyServer = ProxyServer()
+    proxy_server.start()
+
     try:
         while True:
             pass
@@ -28,6 +33,7 @@ def main(argv) -> None:
         print("\nExit...")
         arp_poisoner.stop()
         dns_spoofer.stop()
+        proxy_server.stop()
 
 if __name__ == "__main__":
     main(sys.argv[1:])

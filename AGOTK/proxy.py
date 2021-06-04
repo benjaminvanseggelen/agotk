@@ -1,8 +1,28 @@
+from threading import Thread
 import http.server
 import socketserver
 import requests
 
 PORT: int = 80
+
+class ProxyServer():
+    def __init__(self) -> None:
+        self.thread: Thread = Thread(target=self.run_proxy)
+        self.httpd = socketserver.ForkingTCPServer(('', PORT), MyProxy)
+
+    def start(self) -> None:
+        #self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self) -> None:
+        self.is_stopped = True
+        print("Killing " + str(PORT))
+        self.httpd.server_close()
+        self.httpd.shutdown()
+
+    def run_proxy(self):
+        print("Now serving at " + str(PORT))
+        self.httpd.serve_forever()
 
 
 class MyProxy(http.server.SimpleHTTPRequestHandler):
@@ -38,13 +58,3 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         newData = newData.replace('https://', 'http://')
         print(newData)
         self.wfile.write(bytes(newData, 'utf-8'))
-
-
-httpd = socketserver.ForkingTCPServer(('', PORT), MyProxy)
-print("Now serving at " + str(PORT))
-try:
-    httpd.serve_forever()
-except KeyboardInterrupt:
-    pass
-print("Killing " + str(PORT))
-httpd.server_close()
