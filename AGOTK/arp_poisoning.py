@@ -55,8 +55,13 @@ class ARPPoisoner:
     def get_mac_address(self, ip: str) -> str:
         """Broadcast a packet to all devices on the network to get the mac address corresponding to the ip address"""
         arp_packet: Packet = Ether(dst = 'ff:ff:ff:ff:ff:ff') / ARP(op = 1, pdst = ip)
-        response: str = srp(arp_packet, timeout=5, verbose=False, iface=self.interface)[0][0][1].hwsrc
-        return response
+        srp_packet = srp(arp_packet, timeout=5, verbose=False, iface=self.interface)
+        if len(srp_packet[0]) > 0:
+            response: str = srp_packet[0][0][1].hwsrc
+            return response
+        else:
+            print('error broadcasting packet')
+            return None
 
     def get_spoof_packet(self, ip_target: str, mac_target: str, ip_spoof: str) -> Packet:
         """Creates a reply ARP packet"""
