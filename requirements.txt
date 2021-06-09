@@ -1,3 +1,4 @@
 requests==2.24.0
 dataclasses==0.8
 scapy==2.4.5
+inquirer==2.7.0

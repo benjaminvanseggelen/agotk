@@ -12,19 +12,12 @@ def arp_scan(interface: str, ip_range: str) -> List[str]:
     return ip_addresses
 
 
-
-if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        interface: str = sys.argv[1]
-        ip_range: str = sys.argv[2]
-    else:
-        interface = conf.iface
-        ip_range: str = sys.argv[1]
-    
+def scan(interface: str, ip_range: str) -> List[str]:
     print(f'Scanning port range {ip_range} with interface {interface}')
     
     ip_addresses = arp_scan(interface, ip_range)
 
+    return ip_addresses
     print(f'Detected ip-addresses:')
     for ip in ip_addresses:
         print(ip)
