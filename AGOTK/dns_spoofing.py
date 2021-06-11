@@ -70,7 +70,7 @@ class DNSSpoofer:
 
     def spoof_dns_request(self, pkt: Packet) -> None:
         """For a sniffed DNS packet, generate and send spoofed DNS responses for each requested record"""
-        if pkt and DNS in pkt and IP in pkt:
+        if pkt and DNS in pkt and IP in pkt and Ether in pkt:
             for i in range(int(pkt[DNS].qdcount)):
                 # qdcount = the number of requested records
                 name = pkt[DNS].qd[i].qname
