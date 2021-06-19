@@ -18,6 +18,4 @@ def scan(interface: str, ip_range: str) -> List[str]:
     ip_addresses = arp_scan(interface, ip_range)
 
     return ip_addresses
-    print(f'Detected ip-addresses:')
-    for ip in ip_addresses:
-        print(ip)
+
