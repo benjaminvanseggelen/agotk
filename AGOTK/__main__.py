@@ -27,7 +27,7 @@ def main(argv) -> None:
 
     if args.target is None:
         # no target is given so scan automatically
-        ip_range: str = "192.168.200.0/24"
+        ip_range: str = "192.168.2.0/24"
         ip_addresses: List[str] = network_scanner.scan(interface, ip_range)
         #ip_addresses = ['192.168.200.1', '192.168.200.2', '192.168.200.3']
         questions = [
