@@ -47,7 +47,10 @@ class DNSSpoofer:
 
     def isIncoming(self, pkt: Packet) -> bool:
         """Filter to check, whether a packet is (supposedly) incoming, and not from this interface"""
-        return pkt[Ether].src != get_if_hwaddr(self.interface)
+        try:
+            return pkt[Ether].src != get_if_hwaddr(self.interface)
+        except:
+            return True
 
     def get_spoof_packet(self, req_pkt: Packet, name: str, recordType: str) -> Packet:
         """Generate one spoofed DNS response packet in response to a particular request"""
