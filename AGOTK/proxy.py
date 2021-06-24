@@ -29,32 +29,34 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
         filteredheaders = {}
+        skipped_req_headers = ['connection','accept-encoding','upgrade-insecure-requests']
         for header in self.headers:
             headlow = header.lower()
             #skip a few headers as we remove the encoding used
-            if headlow != 'connection' and headlow != 'accept-encoding' and headlow != 'upgrade-insecure-requests':
+            if headlow not in skipped_req_headers:
                 filteredheaders[header] = self.headers[header]
 
-        req = requests.get(url, headers=filteredheaders)
+        req = requests.get(url, headers=filteredheaders, allow_redirects=False)
         self.send_response_only(req.status_code)
         isTextReq = False
+        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only']
         for header in req.headers:
             headlow = header.lower()
             if headlow == 'content-type' and 'text/' in req.headers[header]:
                 isTextReq = True
             #skip a few headers as we remove the encoding used
-            if headlow != 'content-encoding' and headlow != 'content-length' and headlow != 'transfer-encoding' and headlow != 'upgrade-insecure-requests' and headlow != 'connection':
+            if headlow not in skipped_res_headers:
                 self.send_header(header, req.headers[header])
+            if headlow == 'location':
+                self.send_header(header, req.headers[header].replace('https://', 'http://'))
         self.end_headers()
         print(self.headers['Host'] + self.path)
         if isTextReq:
-            print('IS TEXT')
             newData = req.text
             #remove https
             newData = newData.replace('https://', 'http://')
             self.wfile.write(bytes(newData, 'utf-8'))
         else:
-            print('IS NOT TEXT')
             self.wfile.write(req.content)
 
 
@@ -62,24 +64,28 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         url = 'https://' + self.headers['Host'] + self.path
         data = None
         filteredheaders = {}
+        skipped_req_headers = ['connection','accept-encoding','upgrade-insecure-requests']
         for header in self.headers:
             headlow = header.lower()
             if headlow == 'content-length':
                 data = self.rfile.read(int(self.headers[header]))
             #skip a few headers as we remove the encoding used
-            if headlow != 'connection' and headlow != 'accept-encoding' and headlow != 'upgrade-insecure-requests':
+            if headlow not in skipped_req_headers:
                 filteredheaders[header] = self.headers[header]
 
-        req = requests.post(url, data=data, headers=filteredheaders)
+        req = requests.post(url, data=data, headers=filteredheaders, allow_redirects=False)
         self.send_response_only(req.status_code)
         isTextReq = False
+        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only']
         for header in req.headers:
             headlow = header.lower()
             if headlow == 'content-type' and 'text/' in req.headers[header]:
                 isTextReq = True
             #skip a few headers as we remove the encoding used
-            if headlow != 'content-encoding' and headlow != 'content-length' and headlow != 'transfer-encoding' and headlow != 'upgrade-insecure-requests' and headlow != 'connection':
+            if headlow not in skipped_res_headers:
                 self.send_header(header, req.headers[header])
+            if headlow == 'location':
+                self.send_header(header, req.headers[header].replace('https://', 'http://'))
         self.end_headers()
         print(self.headers['Host'] + self.path)
         if isTextReq:
