@@ -3,7 +3,7 @@ import http.server
 import socketserver
 import requests
 
-PORT: int = 80
+PORT: int = 10000
 
 class ProxyServer():
     def __init__(self) -> None:
@@ -28,33 +28,67 @@ class ProxyServer():
 class MyProxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
-        req = requests.get(url, headers=self.headers)
+        filteredheaders = {}
+        for header in self.headers:
+            headlow = header.lower()
+            #skip a few headers as we remove the encoding used
+            if headlow != 'connection' and headlow != 'accept-encoding' and headlow != 'upgrade-insecure-requests':
+                filteredheaders[header] = self.headers[header]
+
+        req = requests.get(url, headers=filteredheaders)
         self.send_response_only(req.status_code)
+        isTextReq = False
         for header in req.headers:
-            if header != 'Content-Encoding' and header != 'Content-Length' and header != 'Transfer-Encoding':
-                print(header)
-                print(req.headers[header])
+            headlow = header.lower()
+            if headlow == 'content-type' and 'text/' in req.headers[header]:
+                isTextReq = True
+            #skip a few headers as we remove the encoding used
+            if headlow != 'content-encoding' and headlow != 'content-length' and headlow != 'transfer-encoding' and headlow != 'upgrade-insecure-requests' and headlow != 'connection':
                 self.send_header(header, req.headers[header])
         self.end_headers()
-        newData = req.text
-        #remove https
-        newData = newData.replace('https://', 'http://')
-        print(newData)
-        self.wfile.write(bytes(newData, 'utf-8'))
+        print(self.headers['Host'] + self.path)
+        if isTextReq:
+            print('IS TEXT')
+            newData = req.text
+            #remove https
+            newData = newData.replace('https://', 'http://')
+            self.wfile.write(bytes(newData, 'utf-8'))
+        else:
+            print('IS NOT TEXT')
+            self.wfile.write(req.content)
+
 
     def do_POST(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
-        data = self.rfile.read(int(self.headers['Content-Length']))
-        print(data)
-        req = requests.post(url, data=data, headers=self.headers)
-        self.send_response_only(req.status_code)
-        for header in req.headers:
+        data = None
+        filteredheaders = {}
+        for header in self.headers:
+            headlow = header.lower()
+            if headlow == 'content-length':
+                data = self.rfile.read(int(self.headers[header]))
             #skip a few headers as we remove the encoding used
-            if header != 'Content-Encoding' and header != 'Content-Length' and header != 'Transfer-Encoding':
+            if headlow != 'connection' and headlow != 'accept-encoding' and headlow != 'upgrade-insecure-requests':
+                filteredheaders[header] = self.headers[header]
+
+        req = requests.post(url, data=data, headers=filteredheaders)
+        self.send_response_only(req.status_code)
+        isTextReq = False
+        for header in req.headers:
+            headlow = header.lower()
+            if headlow == 'content-type' and 'text/' in req.headers[header]:
+                isTextReq = True
+            #skip a few headers as we remove the encoding used
+            if headlow != 'content-encoding' and headlow != 'content-length' and headlow != 'transfer-encoding' and headlow != 'upgrade-insecure-requests' and headlow != 'connection':
                 self.send_header(header, req.headers[header])
         self.end_headers()
-        newData = req.text
-        #remove https
-        newData = newData.replace('https://', 'http://')
-        print(newData)
-        self.wfile.write(bytes(newData, 'utf-8'))
+        print(self.headers['Host'] + self.path)
+        if isTextReq:
+            print('IS TEXT')
+            newData = req.text
+            #remove https
+            newData = newData.replace('https://', 'http://')
+            self.wfile.write(bytes(newData, 'utf-8'))
+        else:
+            print('IS NOT TEXT')
+            self.wfile.write(req.content)
+        print(data)
