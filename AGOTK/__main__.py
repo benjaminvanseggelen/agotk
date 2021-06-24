@@ -59,7 +59,7 @@ def main(argv) -> None:
     except KeyboardInterrupt:
         print("\nExit...")
         arp_poisoner.stop()
-        # dns_spoofer.stop()
+        dns_spoofer.stop()
         proxy_server.stop()
 
 if __name__ == "__main__":
