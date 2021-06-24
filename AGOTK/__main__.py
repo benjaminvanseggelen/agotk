@@ -12,6 +12,7 @@ def main(argv) -> None:
     parser.add_argument('-i', '--interface', type=str, required=False, help='The interface to use')
 
     parser.add_argument('-t', '--target', type=str, required=False, help='The ip address of the target')
+    parser.add_argument('-r', '--range', type=str, required=False, help='The ip range to scan over, alternative to --target')
 
     args = parser.parse_args()
 
@@ -26,10 +27,14 @@ def main(argv) -> None:
     ip_target: str = ""
 
     if args.target is None:
-        # no target is given so scan automatically
-        ip_range: str = "192.168.2.0/24"
+        # no target is given so scan automatically over subnet {ip}/24
+        if args.range is None:
+            ip_range: str = get_if_addr(interface) + '/24'
+        else:
+            ip_range: str = args.range
+            
         ip_addresses: List[str] = network_scanner.scan(interface, ip_range)
-        #ip_addresses = ['192.168.200.1', '192.168.200.2', '192.168.200.3']
+
         questions = [
             inquirer.List('ip_address',
                         message="What is the ip address of the target?",
