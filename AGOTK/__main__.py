@@ -47,8 +47,8 @@ def main(argv) -> None:
     arp_poisoner: ARPPoisoner = ARPPoisoner(interface, ip_target, ip_gateway)
     arp_poisoner.start()
 
-    # dns_spoofer: DNSSpoofer = DNSSpoofer(interface)
-    # dns_spoofer.start()
+    dns_spoofer: DNSSpoofer = DNSSpoofer(interface)
+    dns_spoofer.start()
 
     proxy_server: ProxyServer = ProxyServer()
     proxy_server.start()
