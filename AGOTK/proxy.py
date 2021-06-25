@@ -89,12 +89,10 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         print(self.headers['Host'] + self.path)
         if isTextReq:
-            print('IS TEXT')
             newData = req.text
             #remove https
             newData = newData.replace('https://', 'http://')
             self.wfile.write(bytes(newData, 'utf-8'))
         else:
-            print('IS NOT TEXT')
             self.wfile.write(req.content)
         print(data)
