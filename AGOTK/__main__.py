@@ -10,7 +10,6 @@ import inquirer
 def main(argv) -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     parser.add_argument('-i', '--interface', type=str, required=False, help='The interface to use')
-
     parser.add_argument('-t', '--target', type=str, required=False, help='The ip address of the target')
     parser.add_argument('-r', '--range', type=str, required=False, help='The ip range to scan over, alternative to --target')
 
@@ -52,8 +51,9 @@ def main(argv) -> None:
     arp_poisoner: ARPPoisoner = ARPPoisoner(interface, ip_target, ip_gateway)
     arp_poisoner.start()
 
-    dns_spoofer: DNSSpoofer = DNSSpoofer(interface)
-    dns_spoofer.start()
+    target_domain = 'example.com'
+    #dns_spoofer: DNSSpoofer = DNSSpoofer(ip_target, target_domain, interface)
+    #dns_spoofer.start()
 
     proxy_server: ProxyServer = ProxyServer()
     proxy_server.start()
@@ -64,7 +64,7 @@ def main(argv) -> None:
     except KeyboardInterrupt:
         print("\nExit...")
         arp_poisoner.stop()
-        dns_spoofer.stop()
+        #dns_spoofer.stop()
         proxy_server.stop()
 
 if __name__ == "__main__":
