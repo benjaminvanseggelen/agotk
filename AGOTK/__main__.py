@@ -83,9 +83,8 @@ def main(argv) -> None:
             break
         except KeyboardInterrupt:
             continue
-
-    print("Done Done")
-
+    
+    
 
 if __name__ == "__main__":
     main(sys.argv[1:])
