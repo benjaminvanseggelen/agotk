@@ -30,7 +30,7 @@ class ARPPoisoner:
         self.ip_target: str = ip_target
         self.ip_gateway: str = ip_gateway
         self.is_stopped: bool = False
-        self.thread: Thread = threading.Thread(target=self.spoof, args=(10,))
+        self.thread: Thread = threading.Thread(target=self.spoof, args=(5,))
 
     def start(self):
         """Start the thread"""

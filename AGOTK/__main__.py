@@ -70,6 +70,7 @@ def main(argv) -> None:
 
     if args.blockhttps is not None:
         os.system(f'iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT')
+        os.system(f'iptables -t nat -A PREROUTING -p udp --destination-port 443 -j REDIRECT')
 
     try:
         while True:
@@ -82,6 +83,7 @@ def main(argv) -> None:
         proxy_server.stop()
         if args.blockhttps is not None:
             os.system(f'iptables -t nat -D PREROUTING -p tcp --destination-port 443 -j REDIRECT')
+            os.system(f'iptables -t nat -D PREROUTING -p udp --destination-port 443 -j REDIRECT')
 
 
     while True:
