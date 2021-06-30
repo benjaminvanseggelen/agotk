@@ -2,6 +2,7 @@ from threading import Thread
 import http.server
 import socketserver
 import requests
+import re
 
 PORT: int = 10000
 
@@ -39,7 +40,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         req = requests.get(url, headers=filteredheaders, allow_redirects=False, verify=False)
         self.send_response_only(req.status_code)
         isTextReq = False
-        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only']
+        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only', 'set-cookie']
         for header in req.headers:
             headlow = header.lower()
             if headlow == 'content-type' and 'text/' in req.headers[header]:
@@ -49,6 +50,10 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
                 self.send_header(header, req.headers[header])
             if headlow == 'location':
                 self.send_header(header, req.headers[header].replace('https://', 'http://'))
+            if headlow == 'set-cookie':
+                #remove the secure flag from a cookie
+                regex = r"; ?secure"
+                self.send_header(re.sub(regex, "", req.headers[header], 1, re.IGNORECASE))
         self.end_headers()
         print(self.headers['Host'] + self.path)
         if isTextReq:
@@ -76,7 +81,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         req = requests.post(url, data=data, headers=filteredheaders, allow_redirects=False)
         self.send_response_only(req.status_code)
         isTextReq = False
-        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only']
+        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only', 'set-cookie']
         for header in req.headers:
             headlow = header.lower()
             if headlow == 'content-type' and 'text/' in req.headers[header]:
@@ -86,6 +91,10 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
                 self.send_header(header, req.headers[header])
             if headlow == 'location':
                 self.send_header(header, req.headers[header].replace('https://', 'http://'))
+            if headlow == 'set-cookie':
+                #remove the secure flag from a cookie
+                regex = r"; ?secure"
+                self.send_header(re.sub(regex, "", req.headers[header], 1, re.IGNORECASE))
         self.end_headers()
         print(self.headers['Host'] + self.path)
         if isTextReq:
