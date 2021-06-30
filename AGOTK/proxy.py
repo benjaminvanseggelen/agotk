@@ -31,13 +31,16 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
         filteredheaders = {}
-        skipped_req_headers = ['connection',
-                               'accept-encoding', 'upgrade-insecure-requests']
+        skipped_req_headers = [
+            'connection', 'accept-encoding', 'upgrade-insecure-requests', 'referrer']
         for header in self.headers:
             headlow = header.lower()
             # skip a few headers as we remove the encoding used
             if headlow not in skipped_req_headers:
                 filteredheaders[header] = self.headers[header]
+            if headlow == 'referrer':
+                self.send_header(
+                    header, req.headers[header].replace('http://', 'https://'))
 
         req = requests.get(url, headers=filteredheaders,
                            allow_redirects=False)
@@ -74,8 +77,8 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         url = 'https://' + self.headers['Host'] + self.path
         data = None
         filteredheaders = {}
-        skipped_req_headers = ['connection',
-                               'accept-encoding', 'upgrade-insecure-requests']
+        skipped_req_headers = [
+            'connection', 'accept-encoding', 'upgrade-insecure-requests', 'referrer']
         for header in self.headers:
             headlow = header.lower()
             if headlow == 'content-length':
@@ -83,6 +86,9 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
             # skip a few headers as we remove the encoding used
             if headlow not in skipped_req_headers:
                 filteredheaders[header] = self.headers[header]
+            if headlow == 'referrer':
+                self.send_header(
+                    header, req.headers[header].replace('http://', 'https://'))
 
         req = requests.post(
             url, data=data, headers=filteredheaders, allow_redirects=False)
