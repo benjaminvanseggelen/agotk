@@ -1,5 +1,7 @@
 # AGOTK
-AGOTK is a tool that sets up a man-im-the-middle attack by means of ARP Poisoning to put itself between the gateay and the target. Using the man-in-the-middle position, it spoofs the DNS requests by answering with the IP of the device the tool is running on such that each messsage that the target sends will be send to a proxy server that AGOTK maintains. Within this proxy server AGOTK will apply SSL stripping.
+The tool AGOTK sets up a man-in-the-middle attack (MITM) by means of ARP Poisoning to put itself between the gateway and the target. This way, AGOTK will receive all packets that the targets sends to the gateway, and vice versa AGOTK will receive all packets that the gate- way sends to the target. If AGOTK would only use this attack, then it would not be able to inspect a lot of packets because most packets these days are sent using HTTPS. To overcome this problem, AGOTK will route all packets to a proxy that prevents the upgrade from HTTP to HTTPS. In this case, the proxy is located at the same host as where AGOTK is located. If the proxy receives any HTTP requests to a specific website from the target, then the proxy will establish a secure HTTPS connection to that specific website using the data from the previous received HTTP request. After the response that the proxy receives from the specific website, the proxy forward the received response to the target by means of an HTTP connection.
+
+In addition to that, the tool AGOTK can also be used in a way that only packets from a specific domain are sent to a proxy, rather than all packets. This can be done using DNS Spoofing that can inspect all DNS record that the target sends to the gateway and check whether the DNS request is a request for the target domain. If so, then it will send a request back with the IP address of the proxy. Hereby only packets that are send from and to the target domain will be redirect to the proxy.
 
 ## Requirements
 To run this tool Python 3.8 is required as well as Linux as operating system.
@@ -12,8 +14,9 @@ To install the packages, you need to enter the following:
 
 ## Usage
 To run the module, you need to enter the following command:
-
-```sudo python -m AGOTK -i <interface> -t <target> -r <range>```
+```
+sudo python -m AGOTK [-h] [-i INTERFACE] [-t TARGET] [-r RANGE] [-o OBTRUSIVE] [-d DOMAIN] [-n NEWIP] [--newip6 NEWIP6] [--filter FILTER]
+```
 
 If no interface is given, AGOTK will use the default one. If no target (i.e. an IP address of the target) is given, AGOTK will run a manual scan to get a list of IP addresses on the local network. If no range is given then AGOTK will scan on subnet {ip}/24.
 

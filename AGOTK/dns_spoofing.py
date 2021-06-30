@@ -1,4 +1,5 @@
 from scapy.all import *
+from threading import Thread
 
 class DNSSpoofer:
     """
