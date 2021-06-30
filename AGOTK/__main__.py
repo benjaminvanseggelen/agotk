@@ -75,5 +75,16 @@ def main(argv) -> None:
             dns_spoofer.stop()
         proxy_server.stop()
 
+
+    while True:
+        try:
+            arp_poisoner.thread.join()
+            proxy_server.thread.join()    
+            break
+        except KeyboardInterrupt:
+            continue
+    
+    
+
 if __name__ == "__main__":
     main(sys.argv[1:])
