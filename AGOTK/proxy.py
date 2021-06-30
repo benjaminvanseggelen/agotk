@@ -31,15 +31,14 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         url = 'https://' + self.headers['Host'] + self.path
         filteredheaders = {}
-        skipped_req_headers = [
-            'connection', 'accept-encoding', 'upgrade-insecure-requests', 'referer']
+        skipped_req_headers = ['connection',
+                               'accept-encoding', 'upgrade-insecure-requests']
         for header in self.headers:
             headlow = header.lower()
             # skip a few headers as we remove the encoding used
             if headlow not in skipped_req_headers:
-                filteredheaders[header] = self.headers[header]
-            if headlow == 'referer':
-                filteredheaders[header] = self.headers[header].replace('http://', 'https://')
+                filteredheaders[header] = self.headers[header].replace(
+                    'http://', 'https://')
 
         req = requests.get(url, headers=filteredheaders,
                            allow_redirects=False)
@@ -76,17 +75,16 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         url = 'https://' + self.headers['Host'] + self.path
         data = None
         filteredheaders = {}
-        skipped_req_headers = [
-            'connection', 'accept-encoding', 'upgrade-insecure-requests', 'referer']
+        skipped_req_headers = ['connection',
+                               'accept-encoding', 'upgrade-insecure-requests']
         for header in self.headers:
             headlow = header.lower()
             if headlow == 'content-length':
                 data = self.rfile.read(int(self.headers[header]))
             # skip a few headers as we remove the encoding used
             if headlow not in skipped_req_headers:
-                filteredheaders[header] = self.headers[header]
-            if headlow == 'referer':
-                filteredheaders[header] = self.headers[header].replace('http://', 'https://')
+                filteredheaders[header] = self.headers[header].replace(
+                    'http://', 'https://')
 
         req = requests.post(
             url, data=data, headers=filteredheaders, allow_redirects=False)
