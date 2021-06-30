@@ -40,7 +40,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         req = requests.get(url, headers=filteredheaders, allow_redirects=False, verify=False)
         self.send_response_only(req.status_code)
         isTextReq = False
-        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only', 'set-cookie']
+        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only', 'set-cookie', 'alt-svc']
         for header in req.headers:
             headlow = header.lower()
             if headlow == 'content-type' and 'text/' in req.headers[header]:
@@ -81,7 +81,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
         req = requests.post(url, data=data, headers=filteredheaders, allow_redirects=False)
         self.send_response_only(req.status_code)
         isTextReq = False
-        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only', 'set-cookie']
+        skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only', 'set-cookie', 'alt-svc']
         for header in req.headers:
             headlow = header.lower()
             if headlow == 'content-type' and 'text/' in req.headers[header]:
