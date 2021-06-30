@@ -36,7 +36,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
             if headlow not in skipped_req_headers:
                 filteredheaders[header] = self.headers[header]
 
-        req = requests.get(url, headers=filteredheaders, allow_redirects=False)
+        req = requests.get(url, headers=filteredheaders, allow_redirects=False, verify=False)
         self.send_response_only(req.status_code)
         isTextReq = False
         skipped_res_headers = ['content-encoding','content-length','transfer-encoding','upgrade-insecure-requests','connection','location','content-security-policy','content-security-policy-report-only']
