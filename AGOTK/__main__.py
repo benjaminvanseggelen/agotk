@@ -15,7 +15,7 @@ def main(argv) -> None:
     parser.add_argument('-d', '--domain', type=str, required=False, help='A target domain to spoof DNS requests for. This will enable DNS spoofing.')
     parser.add_argument('-n', '--newip', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv4 address.')
     parser.add_argument('--newip6', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv6 address.')
-    parser.add_argument('--filter', type=int, default=0, help='Filter type for DNS spoofing. 0 uses BPF which is more performant, but might not work with certain interfaces, e.g. Virtualbox interfaces. Use 1 as fallback.')
+    parser.add_argument('--filter', type=int, default=0, help='Filter type for DNS spoofing. 1 uses BPF which is more performant, but might not work with certain interfaces, e.g. Virtualbox interfaces. Default: 0')
 
     args = parser.parse_args()
 
@@ -57,7 +57,7 @@ def main(argv) -> None:
 
     if args.domain is not None:
         target_domain = args.domain
-        bpf_filtering = True if args.filter == 0 else False
+        bpf_filtering = True if args.filter == 1 else False
         print(f'DNS spoofing enabled for domain: {target_domain}')
         dns_spoofer: DNSSpoofer = DNSSpoofer(ip_target, target_domain, bpf_filtering, interface, args.newip, args.newip6)
         dns_spoofer.start()

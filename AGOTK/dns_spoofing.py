@@ -158,8 +158,7 @@ class DNSSpoofer:
     def set_packet_forwarding(self, value: bool) -> None:
         """This function turns on or turns off IP (packet) forwarding depending on the value given"""
         if platform == 'linux' or platform == 'linux2':
-            os.system(f'iptables -t nat -{"A" if value else "D"} PREROUTING -p tcp --destination-port 53 -j REDIRECT')
-            os.system(f'iptables -t nat -{"A" if value else "D"} PREROUTING -p udp --destination-port 53 -j REDIRECT')
+            os.system(f'iptables -t nat -{"A" if value else "D"} PREROUTING -s {self.target_ip} -p udp --destination-port 53 -j REDIRECT')
         else:
             print("Cannot turn on IP forwarding automatically...")
     
