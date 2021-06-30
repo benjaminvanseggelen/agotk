@@ -39,8 +39,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
             if headlow not in skipped_req_headers:
                 filteredheaders[header] = self.headers[header]
             if headlow == 'referrer':
-                self.send_header(
-                    header, req.headers[header].replace('http://', 'https://'))
+                filteredheaders[header] = self.headers[header].replace('http://', 'https://')
 
         req = requests.get(url, headers=filteredheaders,
                            allow_redirects=False)
@@ -87,8 +86,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
             if headlow not in skipped_req_headers:
                 filteredheaders[header] = self.headers[header]
             if headlow == 'referrer':
-                self.send_header(
-                    header, req.headers[header].replace('http://', 'https://'))
+                filteredheaders[header] = self.headers[header].replace('http://', 'https://')
 
         req = requests.post(
             url, data=data, headers=filteredheaders, allow_redirects=False)
