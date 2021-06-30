@@ -67,7 +67,7 @@ def main(argv) -> None:
     proxy_server: ProxyServer = ProxyServer()
     proxy_server.start()
 
-    if int(args.blockhttps) == 1:
+    if args.blockhttps is not None:
         os.system(f'iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT')
 
     try:
@@ -79,7 +79,7 @@ def main(argv) -> None:
         if args.domain:
             dns_spoofer.stop()
         proxy_server.stop()
-        if int(args.blockhttps) == 1:
+        if args.blockhttps is not None:
             os.system(f'iptables -t nat -D PREROUTING -p tcp --destination-port 443 -j REDIRECT')
 
 
