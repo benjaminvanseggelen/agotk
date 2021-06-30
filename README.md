@@ -13,7 +13,7 @@ To install the packages, you need to enter the following:
 ```make```
 
 ## Usage
-To run the module, you need to enter the following command:
+To run the module, you need to enter the following command in the tool directory:
 ```
 sudo python -m AGOTK [-h] [-i INTERFACE] [-t TARGET] [-r RANGE] [-o OBTRUSIVE] [-d DOMAIN] [-n NEWIP] [--newip6 NEWIP6] [--filter FILTER]
 ```
