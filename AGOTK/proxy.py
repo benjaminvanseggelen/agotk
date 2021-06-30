@@ -40,7 +40,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
                 filteredheaders[header] = self.headers[header]
 
         req = requests.get(url, headers=filteredheaders,
-                           allow_redirects=False, verify=False)
+                           allow_redirects=False)
         self.send_response_only(req.status_code)
         isTextReq = False
         skipped_res_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'upgrade-insecure-requests', 'strict-transport-security',
