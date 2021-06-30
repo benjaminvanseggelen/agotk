@@ -24,21 +24,14 @@ For help, you need to enter the following command:
 This will show you a list of parameters with explanations.
 
 ### Examples
-Attack target '192.168.0.15' with ARP Poisoning and SSLStrip.
-
+Attack target '192.168.0.15' with ARP Poisoning and SSLStrip.  
 ```sudo python -m AGOTK -t 192.168.0.15```
 
-
-Scan targets and choose, then do ARP Poisoning and SSLStrip. Block HTTPS and Quic traffic.
-
+Scan targets and choose, then do ARP Poisoning and SSLStrip. Block HTTPS and Quic traffic.  
 ```sudo python -m AGOTK -o```
 
-
-Scan targets over range '192.168.0.0/16' on interface 'vboxnet0' and choose, then do ARP Poisoning and SSLStrip:
-
+Scan targets over range '192.168.0.0/16' on interface 'vboxnet0' and choose, then do ARP Poisoning and SSLStrip:  
 ```sudo python -m AGOTK -r 192.168.0.0/16 -i vboxnet0```
 
-
-Scan and choose target, and spoof the domain 'example.com' with new A record '192.168.0.10' and (optionally) AAAA record '2001:0db8::0001:0000':
-
+Scan and choose target, and spoof the domain 'example.com' with new A record '192.168.0.10' and (optionally) AAAA record '2001:0db8::0001:0000':  
 ```sudo python -m AGOTK -d example.com --newip 192.168.0.10 --newip6 2001:0db8::0001:0000``` 
