@@ -9,14 +9,15 @@ import inquirer
 
 def main(argv) -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--interface', type=str, required=False, help='The interface to use')
-    parser.add_argument('-t', '--target', type=str, required=False, help='The ip address of the target')
-    parser.add_argument('-r', '--range', type=str, required=False, help='The ip range to scan over, alternative to --target')
-    parser.add_argument('-b', '--blockhttps', type=int, required=False, help='Block HTTPS requests..........')
+    parser.add_argument('-i', '--interface', type=str, required=False, help='The interface to use, defaults to default interface')
+    parser.add_argument('-t', '--target', type=str, required=False, help='The ip address of the target. Will scan over ip/24 if not given')
+    parser.add_argument('-r', '--range', type=str, required=False, help='The ip range (CIDR notation) to scan over, alternative to --target. Will default to ip/24')
+    parser.add_argument('-o', '--obtrusive', type=int, required=False, help='Obtrusive mode, this blocks HTTPS and Quic traffic. To turn on: "-o 1". default: 0')
+
     # DNS Spoofing
-    parser.add_argument('-d', '--domain', type=str, required=False, help='A target domain to spoof DNS requests for. This will enable DNS spoofing.')
-    parser.add_argument('-n', '--newip', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv4 address.')
-    parser.add_argument('--newip6', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv6 address.')
+    parser.add_argument('-d', '--domain', type=str, required=False, help='A target domain to spoof DNS requests for. This will enable DNS spoofing')
+    parser.add_argument('-n', '--newip', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv4 address')
+    parser.add_argument('--newip6', type=str, required=False, help='If DNS spoofing is enabled (see --domain), then DNS requests for domain -d will be spoofed towards this IPv6 address')
     parser.add_argument('--filter', type=int, default=0, help='Filter type for DNS spoofing. 1 uses BPF which is more performant, but might not work with certain interfaces, e.g. Virtualbox interfaces. Default: 0')
 
     args = parser.parse_args()
