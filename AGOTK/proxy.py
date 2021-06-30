@@ -133,7 +133,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
                 filteredheaders[header] = self.headers[header].replace(
                     'http://', 'https://')
 
-        req = requests.post(
+        req = requests.put(
             url, data=data, headers=filteredheaders, allow_redirects=False)
         self.send_response_only(req.status_code)
         isTextReq = False
