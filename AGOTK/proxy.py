@@ -53,7 +53,7 @@ class MyProxy(http.server.SimpleHTTPRequestHandler):
             if headlow == 'set-cookie':
                 #remove the secure flag from a cookie
                 regex = r"; ?secure"
-                self.send_header(re.sub(regex, "", req.headers[header], 1, re.IGNORECASE))
+                self.send_header(header, re.sub(regex, "", req.headers[header], 1, re.IGNORECASE))
         self.end_headers()
         print(self.headers['Host'] + self.path)
         if isTextReq:
